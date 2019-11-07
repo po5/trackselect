@@ -10,32 +10,32 @@ local tracks = {
     audio = {
         selected = nil,
         best = {},
-        expected = "jpn",
+        preferred = "jpn,japanese",
         excluded = "commentary,director",
-        preferred = ""
+        expected = ""
     },
     video = {
         selected = nil,
         best = {},
-        expected = "",
+        preferred = "",
         excluded = "",
-        preferred = ""
+        expected = ""
     },
     sub = {
         selected = nil,
         best = {},
-        expected = "eng",
+        preferred = "eng",
         excluded = "sign",
-        preferred = ""
+        expected = ""
     }
 }
 
 local options = {}
 
 for _type, track in pairs(tracks) do
-    options["expected_" .. _type .. "_lang"] = track.expected
+    options["preferred_" .. _type .. "_lang"] = track.preferred
     options["excluded_" .. _type .. "_words"] = track.excluded
-    options["preferred_" .. _type .. "_words"] = track.preferred
+    options["expected_" .. _type .. "_words"] = track.expected
 end
 
 mp.options = require "mp.options"
@@ -59,10 +59,10 @@ function trackselect()
                 tracks[track.type].best = track
             end
         end
-        if next(tracks[track.type].best) == nil or tracks[track.type].selected ~= tracks[track.type].best.id then
+        if next(tracks[track.type].best) == nil or not tracks[track.type].best.external then
             if not track.title or options["excluded_" .. track.type .. "_words"] == "" or not contains(track, options["excluded_" .. track.type .. "_words"], "title") then
-                if not track.title or options["preferred_" .. track.type .. "_words"] == "" or contains(track, options["preferred_" .. track.type .. "_words"], "title") then
-                    if next(tracks[track.type].best) == nil or options["expected_" .. track.type .. "_lang"] == "" or not contains(tracks[track.type].best, options["expected_" .. track.type .. "_lang"], "lang") then
+                if not track.title or options["expected_" .. track.type .. "_words"] == "" or contains(track, options["expected_" .. track.type .. "_words"], "title") then
+                    if next(tracks[track.type].best) == nil or options["preferred_" .. track.type .. "_lang"] == "" or not contains(tracks[track.type].best, options["preferred_" .. track.type .. "_lang"], "lang") then
                         tracks[track.type].best = track
                     end
                 end
