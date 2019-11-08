@@ -30,7 +30,9 @@ local tracks = {
     }
 }
 
-local options = {}
+local options = {
+    enabled = true
+}
 
 for _type, track in pairs(tracks) do
     options["preferred_" .. _type .. "_lang"] = track.preferred
@@ -39,7 +41,6 @@ for _type, track in pairs(tracks) do
 end
 
 mp.options = require "mp.options"
-mp.options.read_options(options, "trackselect")
 
 function contains(track, words, attr)
     for word in string.gmatch(words:lower(), "([^,]+)") do
@@ -51,6 +52,9 @@ function contains(track, words, attr)
 end
 
 function trackselect()
+    mp.options.read_options(options, "trackselect")
+    if not options.enabled then return end
+
     local tracklist = mp.get_property_native("track-list")
     for _, track in ipairs(tracklist) do
         if track.selected then
