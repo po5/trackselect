@@ -6,7 +6,7 @@
 -- audio and subtitle tracks.
 -- Idea from https://github.com/siikamiika/scripts/blob/master/mpv%20scripts/dualaudiofix.lua
 
-local tracks = {
+local defaults = {
     audio = {
         selected = nil,
         best = {},
@@ -37,11 +37,13 @@ local options = {
     enabled = true
 }
 
-for _type, track in pairs(tracks) do
+for _type, track in pairs(defaults) do
     options["preferred_" .. _type .. "_lang"] = track.preferred
     options["excluded_" .. _type .. "_words"] = track.excluded
     options["expected_" .. _type .. "_words"] = track.expected
 end
+
+local tracks = {}
 
 mp.options = require "mp.options"
 
@@ -72,7 +74,15 @@ function preferred(track, words, attr)
     return false
 end
 
+function copy(obj)
+  if type(obj) ~= "table" then return obj end
+  local res = {}
+  for k, v in pairs(obj) do res[k] = copy(v) end
+  return res
+end
+
 function trackselect()
+    tracks = copy(defaults)
     mp.options.read_options(options, "trackselect")
     if not options.enabled then return end
     local tracklist = mp.get_property_native("track-list")
