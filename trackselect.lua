@@ -63,6 +63,7 @@ function preferred(track, words, attr)
     local score = contains(track, words, attr)
     if not score then
         if tracks[track.type].score == nil then
+            tracks[track.type].score = -math.huge
             return true
         end
         return false
