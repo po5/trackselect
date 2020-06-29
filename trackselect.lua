@@ -88,17 +88,19 @@ function trackselect()
     if not options.enabled then return end
     local tracklist = mp.get_property_native("track-list")
     for _, track in ipairs(tracklist) do
-        if track.selected then
-            tracks[track.type].selected = track.id
-            if track.external then
-                tracks[track.type].best = track
+        if options["preferred_" .. track.type .. "_lang"] ~= "" or options["excluded_" .. track.type .. "_words"] ~= "" or options["expected_" .. track.type .. "_words"] ~= "" then
+            if track.selected then
+                tracks[track.type].selected = track.id
+                if track.external then
+                    tracks[track.type].best = track
+                end
             end
-        end
-        if next(tracks[track.type].best) == nil or not tracks[track.type].best.external then
-            if options["excluded_" .. track.type .. "_words"] == "" or not contains(track, options["excluded_" .. track.type .. "_words"], "title") then
-                if options["expected_" .. track.type .. "_words"] == "" or contains(track, options["expected_" .. track.type .. "_words"], "title") then
-                    if options["preferred_" .. track.type .. "_lang"] == "" or preferred(track, options["preferred_" .. track.type .. "_lang"], "lang") then
-                        tracks[track.type].best = track
+            if next(tracks[track.type].best) == nil or not tracks[track.type].best.external then
+                if options["excluded_" .. track.type .. "_words"] == "" or not contains(track, options["excluded_" .. track.type .. "_words"], "title") then
+                    if options["expected_" .. track.type .. "_words"] == "" or contains(track, options["expected_" .. track.type .. "_words"], "title") then
+                        if options["preferred_" .. track.type .. "_lang"] == "" or preferred(track, options["preferred_" .. track.type .. "_lang"], "lang") then
+                            tracks[track.type].best = track
+                        end
                     end
                 end
             end
