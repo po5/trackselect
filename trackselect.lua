@@ -50,6 +50,9 @@ mp.options = require "mp.options"
 function contains(track, words, attr)
     if not track[attr] then return false end
     local i = 0
+    if track.external then
+        i = 1
+    end
     for word in string.gmatch(words:lower(), "([^/]+)") do
         i = i - 1
         if string.match(track[attr]:lower(), word) then
@@ -86,19 +89,20 @@ function trackselect()
     tracks = copy(defaults)
     mp.options.read_options(options, "trackselect")
     if not options.enabled then return end
+    local filename = mp.get_property("filename/no-ext")
     local tracklist = mp.get_property_native("track-list")
     for _, track in ipairs(tracklist) do
         if options["preferred_" .. track.type .. "_lang"] ~= "" or options["excluded_" .. track.type .. "_words"] ~= "" or options["expected_" .. track.type .. "_words"] ~= "" then
             if track.selected then
                 tracks[track.type].selected = track.id
-                if track.external then
-                    tracks[track.type].best = track
-                end
             end
-            if next(tracks[track.type].best) == nil or not tracks[track.type].best.external then
+            if track.external then
+                track.title = string.gsub(track.title, filename, "")
+            end
+            if next(tracks[track.type].best) == nil or not (tracks[track.type].best.external and tracks[track.type].best.lang ~= nil) then
                 if options["excluded_" .. track.type .. "_words"] == "" or not contains(track, options["excluded_" .. track.type .. "_words"], "title") then
                     if options["expected_" .. track.type .. "_words"] == "" or contains(track, options["expected_" .. track.type .. "_words"], "title") then
-                        if options["preferred_" .. track.type .. "_lang"] == "" or preferred(track, options["preferred_" .. track.type .. "_lang"], "lang") then
+                        if options["preferred_" .. track.type .. "_lang"] == "" or preferred(track, options["preferred_" .. track.type .. "_lang"], "lang") or (track.external and track.lang == nil and (not tracks[track.type].best.external or tracks[track.type].best.lang == nil)) then
                             tracks[track.type].best = track
                         end
                     end
