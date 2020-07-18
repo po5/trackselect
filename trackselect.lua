@@ -79,10 +79,10 @@ function preferred(track, words, attr)
 end
 
 function copy(obj)
-  if type(obj) ~= "table" then return obj end
-  local res = {}
-  for k, v in pairs(obj) do res[k] = copy(v) end
-  return res
+    if type(obj) ~= "table" then return obj end
+    local res = {}
+    for k, v in pairs(obj) do res[k] = copy(v) end
+    return res
 end
 
 function trackselect()
@@ -97,7 +97,7 @@ function trackselect()
                 tracks[track.type].selected = track.id
             end
             if track.external then
-                track.title = "^"..string.gsub(string.gsub(track.title, "([^%w])", "%%%1"), filename, "")
+                track.title = string.gsub(string.gsub(track.title, "([^%w])", "%%%1"), filename, "")
             end
             if next(tracks[track.type].best) == nil or not (tracks[track.type].best.external and tracks[track.type].best.lang ~= nil) then
                 if options["excluded_" .. track.type .. "_words"] == "" or not contains(track, options["excluded_" .. track.type .. "_words"], "title") then
