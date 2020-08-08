@@ -37,7 +37,10 @@ local options = {
     enabled = true,
 
     -- Do track selection synchronously, plays nicer with other scripts
-    hook = true
+    hook = true,
+
+    -- Mimic mpv's track list fingerprint to preserve user-selected tracks
+    fingerprint = true
 }
 
 for _type, track in pairs(defaults) do
@@ -47,6 +50,7 @@ for _type, track in pairs(defaults) do
 end
 
 local tracks = {}
+local fingerprint = ""
 
 mp.options = require "mp.options"
 
@@ -88,12 +92,27 @@ function copy(obj)
     return res
 end
 
+function track_layout_hash(tracklist)
+    local t = {}
+    for _, track in ipairs(tracklist) do
+        t[#t+1] = string.format("%s-%d-%s-%s-%s-%s", track.type, track.id, tostring(track.default), tostring(track.external), track.lang or "", track.external and "" or (track.title or ""))
+    end
+    return table.concat(t, "\n")
+end
+
 function trackselect()
     mp.options.read_options(options, "trackselect")
     if not options.enabled then return end
     tracks = copy(defaults)
     local filename = mp.get_property("filename/no-ext")
     local tracklist = mp.get_property_native("track-list")
+    if options.fingerprint then
+        local new_fingerprint = track_layout_hash(tracklist)
+        if new_fingerprint == fingerprint then
+            return
+        end
+        fingerprint = new_fingerprint
+    end
     for _, track in ipairs(tracklist) do
         if options["preferred_" .. track.type .. "_lang"] ~= "" or options["excluded_" .. track.type .. "_words"] ~= "" or options["expected_" .. track.type .. "_words"] ~= "" then
             if track.selected then
