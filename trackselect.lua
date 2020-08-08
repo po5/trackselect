@@ -34,7 +34,10 @@ local defaults = {
 }
 
 local options = {
-    enabled = true
+    enabled = true,
+
+    -- Do track selection synchronously, plays nicer with other scripts
+    hook = true
 }
 
 for _type, track in pairs(defaults) do
@@ -86,9 +89,9 @@ function copy(obj)
 end
 
 function trackselect()
-    tracks = copy(defaults)
     mp.options.read_options(options, "trackselect")
     if not options.enabled then return end
+    tracks = copy(defaults)
     local filename = mp.get_property("filename/no-ext")
     local tracklist = mp.get_property_native("track-list")
     for _, track in ipairs(tracklist) do
@@ -97,7 +100,7 @@ function trackselect()
                 tracks[track.type].selected = track.id
             end
             if track.external then
-                track.title = string.gsub(string.gsub(track.title, "([^%w])", "%%%1"), filename, "")
+                track.title = string.gsub(string.gsub(track.title, "%W", "%%%1"), filename, "")
             end
             if next(tracks[track.type].best) == nil or not (tracks[track.type].best.external and tracks[track.type].best.lang ~= nil) then
                 if options["excluded_" .. track.type .. "_words"] == "" or not contains(track, options["excluded_" .. track.type .. "_words"], "title") then
@@ -117,4 +120,8 @@ function trackselect()
     end
 end
 
-mp.register_event("file-loaded", trackselect)
+if options.hook then
+    mp.add_hook("on_preloaded", 50, trackselect)
+else
+    mp.register_event("file-loaded", trackselect)
+end
