@@ -14,7 +14,8 @@ local defaults = {
         channels_score = -math.huge,
         preferred = "jpn/japanese",
         excluded = "",
-        expected = ""
+        expected = "",
+        id = ""
     },
     video = {
         selected = nil,
@@ -22,7 +23,8 @@ local defaults = {
         lang_score = nil,
         preferred = "",
         excluded = "",
-        expected = ""
+        expected = "",
+        id = ""
     },
     sub = {
         selected = nil,
@@ -30,7 +32,8 @@ local defaults = {
         lang_score = nil,
         preferred = "eng",
         excluded = "sign",
-        expected = ""
+        expected = "",
+        id = ""
     }
 }
 
@@ -40,8 +43,14 @@ local options = {
     -- Do track selection synchronously, plays nicer with other scripts
     hook = true,
 
-    -- Mimic mpv's track list fingerprint to preserve user-selected tracks
-    fingerprint = true
+    -- Mimic mpv's track list fingerprint to preserve user-selected tracks across files
+    fingerprint = true,
+
+    -- Override user's explicit track selection
+    force = false,
+
+    -- Try to re-select the last track if mpv cannot do it e.g. when fingerprint changes
+    smart_keep = false
 }
 
 for _type, track in pairs(defaults) do
@@ -53,6 +62,7 @@ end
 options["preferred_audio_channels"] = ""
 
 local tracks = {}
+local last = {}
 local fingerprint = ""
 
 mp.options = require "mp.options"
@@ -123,17 +133,41 @@ function trackselect()
     tracks = copy(defaults)
     local filename = mp.get_property("filename/no-ext")
     local tracklist = mp.get_property_native("track-list")
+    local tracklist_changed = false
+    local found_last = {}
     if options.fingerprint then
         local new_fingerprint = track_layout_hash(tracklist)
         if new_fingerprint == fingerprint then
             return
         end
         fingerprint = new_fingerprint
+        tracklist_changed = true
     end
     for _, track in ipairs(tracklist) do
+        if options.smart_keep and last[track.type] ~= nil and last[track.type].lang == track.lang and last[track.type].codec == track.codec and last[track.type].external == track.external and last[track.type].title == track.title then
+            tracks[track.type].best = track
+            options["preferred_" .. track.type .. "_lang"] = ""
+            options["excluded_" .. track.type .. "_words"] = ""
+            options["expected_" .. track.type .. "_words"] = ""
+            options["preferred_" .. track.type .. "_channels"] = ""
+            found_last[track.type] = true
+        elseif not options.force and (tracklist_changed or not options.fingerprint) then
+            if tracks[track.type].id == "" then
+                tracks[track.type].id = mp.get_property(track.type:sub(1, 1) .. "id", "auto")
+            end
+            if tracks[track.type].id ~= "auto" then
+                options["preferred_" .. track.type .. "_lang"] = ""
+                options["excluded_" .. track.type .. "_words"] = ""
+                options["expected_" .. track.type .. "_words"] = ""
+                options["preferred_" .. track.type .. "_channels"] = ""
+            end
+        end
         if options["preferred_" .. track.type .. "_lang"] ~= "" or options["excluded_" .. track.type .. "_words"] ~= "" or options["expected_" .. track.type .. "_words"] ~= "" or (options["preferred_" .. track.type .. "_channels"] or "") ~= "" then
             if track.selected then
                 tracks[track.type].selected = track.id
+                if options.smart_keep then
+                    last[track.type] = track
+                end
             end
             if track.external then
                 track.title = string.gsub(string.gsub(track.title, "%W", "%%%1"), filename, "")
@@ -162,6 +196,19 @@ function trackselect()
     for _type, track in pairs(tracks) do
         if next(track.best) ~= nil and track.best.id ~= track.selected then
             mp.set_property(_type:sub(1, 1) .. "id", track.best.id)
+            if options.smart_keep and found_last[track.best.type] then
+                last[track.best.type] = track.best
+            end
+        end
+    end
+end
+
+function selected_tracks()
+    local tracklist = mp.get_property_native("track-list")
+    last = {}
+    for _, track in ipairs(tracklist) do
+        if track.selected then
+            last[track.type] = track
         end
     end
 end
@@ -170,4 +217,8 @@ if options.hook then
     mp.add_hook("on_preloaded", 50, trackselect)
 else
     mp.register_event("file-loaded", trackselect)
+end
+
+if options.smart_keep then
+    mp.register_event("track-switched", selected_tracks)
 end
