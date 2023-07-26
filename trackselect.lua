@@ -172,7 +172,7 @@ function trackselect()
             if track.external then
                 track.title = string.gsub(string.gsub(track.title, "%W", "%%%1"), filename, "")
             end
-            if next(tracks[track.type].best) == nil or not (tracks[track.type].best.external and tracks[track.type].best.lang ~= nil) then
+            if next(tracks[track.type].best) == nil or not (tracks[track.type].best.external and tracks[track.type].best.lang ~= nil and not track.external) then
                 if options["excluded_" .. track.type .. "_words"] == "" or not contains(track, options["excluded_" .. track.type .. "_words"], "title") then
                     if options["expected_" .. track.type .. "_words"] == "" or contains(track, options["expected_" .. track.type .. "_words"], "title") then
                         local pass = true
