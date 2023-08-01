@@ -101,7 +101,7 @@ end
 function preferred_or_equals(track, words, attr, title)
     local score = contains(track, words, attr)
     if not score then
-        if tracks[track.type][title] == nil then
+        if tracks[track.type][title] == nil or tracks[track.type][title] == -math.huge then
             return true
         end
         return false
